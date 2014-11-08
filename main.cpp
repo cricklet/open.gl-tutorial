@@ -115,9 +115,9 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.0f,  0.5f, // Vertex 1 (X, Y)
-    0.5f, -0.5f, // Vertex 2 (X, Y)
-    -0.5f, -0.5f  // Vertex 3 (X, Y)
+    0.0f,  0.5f,
+    0.5f, -0.5f,
+    -0.5f, -0.5f
   };
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
@@ -142,7 +142,9 @@ int main (int argv, char *argc[]) {
 
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
-  GLuint fragShader = compileShader("screen.frag", GL_VERTEX_SHADER);
+  GLuint fragShader = compileShader("screen.frag", GL_FRAGMENT_SHADER);
+  checkErrors();
+  
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, vertShader);
   glAttachShader(shaderProgram, fragShader);
@@ -178,6 +180,10 @@ int main (int argv, char *argc[]) {
 	if (windowEvent.key.keysym.sym == SDLK_ESCAPE) break;
       }
     }
+
+    // Clear the screen to black
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glDrawArrays(GL_TRIANGLES,
 		 0,  // # vertices to skip at the beginning
