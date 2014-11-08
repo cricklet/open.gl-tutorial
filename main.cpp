@@ -110,48 +110,64 @@ int main (int argv, char *argc[]) {
   SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
   SDL_GLContext context = SDL_GL_CreateContext(window);
 
-
-  // Initialize GLEW
-  glewExperimental = GL_TRUE;
+  glewExperimental = GL_TRUE; // necessary for modern opengl calls
   glewInit();
+  checkErrors();
 
-  // Create Vertex Array Object
+  GLfloat vertices[] = {
+    0.0f,  0.5f, // Vertex 1 (X, Y)
+    0.5f, -0.5f, // Vertex 2 (X, Y)
+    -0.5f, -0.5f  // Vertex 3 (X, Y)
+  };
+
+  // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
+  // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
+  // a vertex array object.
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
+  checkErrors();
 
-  // Create a Vertex Buffer Object and copy the vertex data to it
+  // We don't want to have to copy vertices to the GPU every time we render. Instead, we can copy
+  // the vertex information into a vertex buffer object.
   GLuint vbo;
-  glGenBuffers(1, &vbo);
+  glGenBuffers(1, &vbo); // generate one buffer object name
+  glBindBuffer(GL_ARRAY_BUFFER, // target to bind to
+	       vbo);
+  glBufferData(GL_ARRAY_BUFFER, // target buffer object
+	       sizeof(vertices),
+	       vertices,
+	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
+  checkErrors();
 
-  GLfloat vertices[] = {
-    0.0f, 0.5f,
-    0.5f, -0.5f,
-    -0.5f, -0.5f
-  };
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  // Create and compile the vertex shader
-  GLuint vertexShader = compileShader("screen.vert", GL_VERTEX_SHADER);
-
-  // Create and compile the fragment shader
-  GLuint fragmentShader = compileShader("screen.frag", GL_FRAGMENT_SHADER);
-
-  // Link the vertex and fragment shader into a shader program
+  // Load the shaders from the filesystem.
+  GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
+  GLuint fragShader = compileShader("screen.frag", GL_VERTEX_SHADER);
   GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  glBindFragDataLocation(shaderProgram, 0, "outColor");
+  glAttachShader(shaderProgram, vertShader);
+  glAttachShader(shaderProgram, fragShader);
+  checkErrors();
+
+  // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
+  // to bind the user-defined varying 'out' variable to.
+  glBindFragDataLocation(shaderProgram,
+			 0, // color number (buffer) to bind to
+			 "outColor");
+  checkErrors();
+
   glLinkProgram(shaderProgram);
   glUseProgram(shaderProgram);
-
-  // Specify the layout of the vertex data
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-  glEnableVertexAttribArray(posAttrib);
-  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  checkErrors();
   
+  // Shader needs to know how to get the input attributes.
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  glVertexAttribPointer(posAttrib,
+			2,  // size of vector i.e. vec2
+			GL_FLOAT,
+			GL_FALSE, // should be normalized
+			0,  // stride: # bytes between each attribute in the array
+			0); // offset: # bytes from the start of the array
+  glEnableVertexAttribArray(posAttrib);
   checkErrors();
 
   SDL_Event windowEvent;
