@@ -96,14 +96,40 @@ int main (int argv, char *argc[]) {
 
   GLuint vbo; // vertex buffer object
   glGenBuffers(1, &vbo); // generate one buffer object name
-  glBindBuffer(GL_ARRAY_BUFFER, vbo); // make vbo the active array buffer
+  glBindBuffer(GL_ARRAY_BUFFER, // target to bind to
+	       vbo);
 
-  glBufferData(GL_ARRAY_BUFFER, // the active array buffer (not &vbo)
+  glBufferData(GL_ARRAY_BUFFER, // target buffer object
 	       sizeof(vertices), vertices,
 	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
-  
+
+  // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
   GLuint fragShader = compileShader("screen.frag", GL_VERTEX_SHADER);
+  GLuint shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertShader);
+  glAttachShader(shaderProgram, fragShader);
+
+  // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
+  // to bind the user-defined varying 'out' variable to.
+  glBindFragDataLocation(shaderProgram,
+			 0, // color number (buffer) to bind to
+			 "outColor");
+
+  glLinkProgram(shaderProgram);
+  
+  // Shader needs to know how to get the input attributes.
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  glVertexAttribPointer(posAttrib,
+			2,  // size of vector i.e. vec2
+			GL_FLOAT,
+			GL_FALSE, // should be normalized
+			0,  // stride: # bytes between each attribute in the array
+			0); // offset: # bytes from the start of the array
+
+  glEnableVertexAttribArray(posAttrib);
+
+  glUseProgram(shaderProgram);
 
   SDL_Event windowEvent;
   while (true) {
