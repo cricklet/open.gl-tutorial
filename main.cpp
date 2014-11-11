@@ -43,6 +43,25 @@ bool checkErrors(const char *filename, int line) {
 }
 #define checkErrors() checkErrors(__FILE__, __LINE__)
 
+GLuint loadTexture(const char *filename, GLuint &tex, int index) {
+  glActiveTexture(GL_TEXTURE0 + index);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  
+  int width, height;
+  unsigned char* image =
+    SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
+
+  glTexImage2D(GL_TEXTURE_2D, 0 /*mipmap*/, GL_RGB, width, height, 0, GL_RGB,
+	       GL_UNSIGNED_BYTE, image);
+  SOIL_free_image_data(image);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
+}
+
 char *getFileContents(const char *filename) {
   FILE *file;
   long fileSize;
@@ -117,10 +136,10 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.5f,  0.5f,  1,0,0, 1,1, // position, rgb, tex-coord
-    0.5f, -0.5f,  0,1,0, 1,0,
-    -0.5f, -0.5f, 0,0,1, 0,0,
-    -0.5f, 0.5f,  1,0,1, 0,1
+    0.5f,  0.5f,  1,0,0, 0,0, // position, rgb, tex-coord
+    0.5f, -0.5f,  0,1,0, 0,1,
+    -0.5f, -0.5f, 0,0,1, 1,1,
+    -0.5f, 0.5f,  1,0,1, 1,0
   };
 
   GLuint vertexStride = sizeof(GLfloat) * 7;
@@ -133,10 +152,6 @@ int main (int argv, char *argc[]) {
   };
 
   GLuint numElements = 6;
-  
-  int textureWidth, textureHeight;
-  unsigned char* texture =
-    SOIL_load_image("mars.jpg", &textureWidth, &textureHeight, 0, SOIL_LOAD_RGB);
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
   // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
@@ -167,21 +182,14 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   // We can store 2d textures in the same kind of buffer.
+  GLuint textures[2];
+  glGenTextures(2, textures);
+  
+  int texKittenIndex = 0;
+  GLuint texKitten = loadTexture("kitten.png", textures[texKittenIndex], texKittenIndex);
 
-  GLuint tex;
-  glGenTextures(1, &tex);
-  glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 0 /*mipmap*/, GL_RGB, textureWidth, textureHeight, 0, GL_RGB,
-	       GL_UNSIGNED_BYTE, texture);
-  SOIL_free_image_data(texture);
-  checkErrors();
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  checkErrors();
+  int texPuppyIndex = 1;
+  GLuint texPuppy = loadTexture("puppy.png", textures[texPuppyIndex], texPuppyIndex);
 
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
@@ -220,11 +228,17 @@ int main (int argv, char *argc[]) {
 			colorOffset);
   glEnableVertexAttribArray(colorAttrib);
 
-  GLint texAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
-  glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+  GLint texCoordAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
+  glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE,
 			vertexStride,
 			texOffset);
-  glEnableVertexAttribArray(texAttrib);
+  glEnableVertexAttribArray(texCoordAttrib);
+
+  GLint texKittenAttrib = glGetAttribLocation(shaderProgram, "texKitten");
+  glUniform1i(texKittenAttrib, texKittenIndex);
+
+  GLint texPuppyAttrib = glGetAttribLocation(shaderProgram, "texPuppy");
+  glUniform1i(texPuppyAttrib, texPuppyIndex);
 
   // GLint colorUniform = glGetUniformLocation(shaderProgram, "triangleColor");
   // glUniform3f(colorUniform, 1.0f, 0.0f, 0.0f);
@@ -254,6 +268,17 @@ int main (int argv, char *argc[]) {
     SDL_GL_SwapWindow(window);
     checkErrors();
   }
+
+  glDeleteTextures(1, &texKitten);
+
+  glDeleteProgram(shaderProgram);
+  glDeleteShader(fragShader);
+  glDeleteShader(vertShader);
+
+  glDeleteBuffers(1, &ebo);
+  glDeleteBuffers(1, &vbo);
+
+  glDeleteVertexArrays(1, &vao);
 
   SDL_GL_DeleteContext(context);
   SDL_Quit();  
