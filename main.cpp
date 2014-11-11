@@ -12,6 +12,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include <SOIL/soil.h>
+
 bool checkErrors(const char *filename, int line) {
   bool result = false;
   
@@ -126,6 +128,10 @@ int main (int argv, char *argc[]) {
   };
 
   GLuint numElements = 6;
+  
+  int textureWidth, textureHeight;
+  unsigned char* texture =
+    SOIL_load_image("mars.jpg", &textureWidth, &textureHeight, 0, SOIL_LOAD_RGB);
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
   // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
@@ -153,6 +159,22 @@ int main (int argv, char *argc[]) {
   glGenBuffers(1, &ebo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+  checkErrors();
+
+  // We can store 2d textures in the same kind of buffer.
+
+  GLuint tex;
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 1 /*mipmap*/, GL_RGB, textureWidth, textureHeight, 0, GL_RGB,
+	       GL_UNSIGNED_BYTE, texture);
+  checkErrors();
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
   checkErrors();
 
   // Load the shaders from the filesystem.
