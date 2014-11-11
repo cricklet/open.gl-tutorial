@@ -115,9 +115,9 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.0f,  0.5f,
-    0.5f, -0.5f,
-    -0.5f, -0.5f
+    0.0f,  0.5f,  1,0,0,
+    0.5f, -0.5f,  0,1,0,
+    -0.5f, -0.5f, 0,0,1
   };
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
@@ -154,7 +154,7 @@ int main (int argv, char *argc[]) {
   // to bind the user-defined varying 'out' variable to.
   glBindFragDataLocation(shaderProgram,
 			 0, // color number (buffer) to bind to
-			 "outColor");
+			 "outFragColor");
   checkErrors();
 
   glLinkProgram(shaderProgram);
@@ -162,14 +162,24 @@ int main (int argv, char *argc[]) {
   checkErrors();
   
   // Shader needs to know how to get the input attributes.
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
   glVertexAttribPointer(posAttrib,
 			2,  // size of vector i.e. vec2
 			GL_FLOAT,
 			GL_FALSE, // should be normalized
-			0,  // stride: # bytes between each attribute in the array
+			5 * sizeof(GLfloat),  // stride: # bytes between each attribute in the array
 			0); // offset: # bytes from the start of the array
   glEnableVertexAttribArray(posAttrib);
+
+  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
+  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE,
+			5 * sizeof(GLfloat),
+			(void*) (2 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(colorAttrib);
+
+  // GLint colorUniform = glGetUniformLocation(shaderProgram, "triangleColor");
+  // glUniform3f(colorUniform, 1.0f, 0.0f, 0.0f);
+
   checkErrors();
 
   SDL_Event windowEvent;
@@ -184,12 +194,17 @@ int main (int argv, char *argc[]) {
     // Clear the screen to black
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Vary the color attribute
+    // float time = (float) clock() / (float) CLOCKS_PER_SEC;
+    // glUniform3f(colorUniform, (sin(100 * time) + 1.0f) / 2.0f, 0.0f, 0.0f);
 
     glDrawArrays(GL_TRIANGLES,
 		 0,  // # vertices to skip at the beginning
 		 3); // # verticies to process
 
     SDL_GL_SwapWindow(window);
+    checkErrors();
   }
 
   SDL_GL_DeleteContext(context);
