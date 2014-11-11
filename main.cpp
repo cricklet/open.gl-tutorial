@@ -4,7 +4,8 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <string>
+
+#include <sys/time.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -238,13 +239,15 @@ int main (int argv, char *argc[]) {
   glUniform1i(texKittenAttrib, texKittenIndex);
 
   GLint texPuppyAttrib = glGetUniformLocation(shaderProgram, "texPuppy");
-  //GLint texPuppyAttrib = glGetAttribLocation(shaderProgram, "texPuppy");  
   glUniform1i(texPuppyAttrib, texPuppyIndex);
 
-  // GLint colorUniform = glGetUniformLocation(shaderProgram, "triangleColor");
-  // glUniform3f(colorUniform, 1.0f, 0.0f, 0.0f);
+  GLint timeUniform = glGetUniformLocation(shaderProgram, "time");
 
   checkErrors();
+
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
 
   SDL_Event windowEvent;
   while (true) {
@@ -255,13 +258,16 @@ int main (int argv, char *argc[]) {
       }
     }
 
+    gettimeofday(&t, NULL);
+    long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
+    float time = (float) (currentTime - startTime) / 1000.0f;
+
     // Clear the screen to black
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     
     // Vary the color attribute
-    // float time = (float) clock() / (float) CLOCKS_PER_SEC;
-    // glUniform3f(colorUniform, (sin(100 * time) + 1.0f) / 2.0f, 0.0f, 0.0f);
+    glUniform1f(timeUniform, time);
 
     // glDrawArrays(GL_TRIANGLES, 0 /*skip*/, 3 /*num*/);
     glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
