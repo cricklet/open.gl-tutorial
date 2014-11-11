@@ -117,11 +117,16 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.5f,  0.5f,  1,0,0,
-    0.5f, -0.5f,  0,1,0,
-    -0.5f, -0.5f, 0,0,1,
-    -0.5f, 0.5f,  1,0,1
+    0.5f,  0.5f,  1,0,0, 1,1, // position, rgb, tex-coord
+    0.5f, -0.5f,  0,1,0, 1,0,
+    -0.5f, -0.5f, 0,0,1, 0,0,
+    -0.5f, 0.5f,  1,0,1, 0,1
   };
+
+  GLuint vertexStride = sizeof(GLfloat) * 7;
+  void *positionOffset = 0;
+  void *colorOffset = (void *) (2 * sizeof(GLfloat));
+  void *texOffset   = (void *) (5 * sizeof(GLfloat));
 
   GLuint elements[] = {
     0, 1, 2, 3, 0, 2
@@ -166,8 +171,9 @@ int main (int argv, char *argc[]) {
   GLuint tex;
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 1 /*mipmap*/, GL_RGB, textureWidth, textureHeight, 0, GL_RGB,
+  glTexImage2D(GL_TEXTURE_2D, 0 /*mipmap*/, GL_RGB, textureWidth, textureHeight, 0, GL_RGB,
 	       GL_UNSIGNED_BYTE, texture);
+  SOIL_free_image_data(texture);
   checkErrors();
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -204,15 +210,21 @@ int main (int argv, char *argc[]) {
 			2,  // size of vector i.e. vec2
 			GL_FLOAT,
 			GL_FALSE, // should be normalized
-			5 * sizeof(GLfloat),  // stride: # bytes between each attribute in the array
+			vertexStride,  // stride: # bytes between each attribute in the array
 			0); // offset: # bytes from the start of the array
   glEnableVertexAttribArray(posAttrib);
 
   GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
   glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE,
-			5 * sizeof(GLfloat),
-			(void*) (2 * sizeof(GLfloat)));
+			vertexStride,
+			colorOffset);
   glEnableVertexAttribArray(colorAttrib);
+
+  GLint texAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
+  glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+			vertexStride,
+			texOffset);
+  glEnableVertexAttribArray(texAttrib);
 
   // GLint colorUniform = glGetUniformLocation(shaderProgram, "triangleColor");
   // glUniform3f(colorUniform, 1.0f, 0.0f, 0.0f);
