@@ -115,10 +115,17 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.0f,  0.5f,  1,0,0,
+    0.5f,  0.5f,  1,0,0,
     0.5f, -0.5f,  0,1,0,
-    -0.5f, -0.5f, 0,0,1
+    -0.5f, -0.5f, 0,0,1,
+    -0.5f, 0.5f,  1,0,1
   };
+
+  GLuint elements[] = {
+    0, 1, 2, 3, 0, 2
+  };
+
+  GLuint numElements = 6;
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
   // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
@@ -138,6 +145,14 @@ int main (int argv, char *argc[]) {
 	       sizeof(vertices),
 	       vertices,
 	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
+  checkErrors();
+
+  // We want to be able to render the vertices in any order (with repetition). To do this, we
+  // create an element array buffer object.
+  GLuint ebo;
+  glGenBuffers(1, &ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
   checkErrors();
 
   // Load the shaders from the filesystem.
@@ -199,9 +214,8 @@ int main (int argv, char *argc[]) {
     // float time = (float) clock() / (float) CLOCKS_PER_SEC;
     // glUniform3f(colorUniform, (sin(100 * time) + 1.0f) / 2.0f, 0.0f, 0.0f);
 
-    glDrawArrays(GL_TRIANGLES,
-		 0,  // # vertices to skip at the beginning
-		 3); // # verticies to process
+    // glDrawArrays(GL_TRIANGLES, 0 /*skip*/, 3 /*num*/);
+    glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
