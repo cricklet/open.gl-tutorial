@@ -43,8 +43,10 @@ bool checkErrors(const char *filename, int line) {
 }
 #define checkErrors() checkErrors(__FILE__, __LINE__)
 
-GLuint loadTexture(const char *filename, GLuint &tex, int index) {
-  glActiveTexture(GL_TEXTURE0 + index);
+GLuint loadTexture(const char *filename, int index) {
+  GLuint tex;
+  glGenTextures(1, &tex);
+  glActiveTexture(GL_TEXTURE0 + (GLuint) index);
   glBindTexture(GL_TEXTURE_2D, tex);
   
   int width, height;
@@ -182,14 +184,11 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   // We can store 2d textures in the same kind of buffer.
-  GLuint textures[2];
-  glGenTextures(2, textures);
-  
   int texKittenIndex = 0;
-  GLuint texKitten = loadTexture("kitten.png", textures[texKittenIndex], texKittenIndex);
+  GLuint texKitten = loadTexture("kitten.png", texKittenIndex);
 
   int texPuppyIndex = 1;
-  GLuint texPuppy = loadTexture("puppy.png", textures[texPuppyIndex], texPuppyIndex);
+  GLuint texPuppy = loadTexture("puppy.png", texPuppyIndex);
 
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
@@ -234,10 +233,12 @@ int main (int argv, char *argc[]) {
 			texOffset);
   glEnableVertexAttribArray(texCoordAttrib);
 
-  GLint texKittenAttrib = glGetAttribLocation(shaderProgram, "texKitten");
+
+  GLint texKittenAttrib = glGetUniformLocation(shaderProgram, "texKitten");
   glUniform1i(texKittenAttrib, texKittenIndex);
 
-  GLint texPuppyAttrib = glGetAttribLocation(shaderProgram, "texPuppy");
+  GLint texPuppyAttrib = glGetUniformLocation(shaderProgram, "texPuppy");
+  //GLint texPuppyAttrib = glGetAttribLocation(shaderProgram, "texPuppy");  
   glUniform1i(texPuppyAttrib, texPuppyIndex);
 
   // GLint colorUniform = glGetUniformLocation(shaderProgram, "triangleColor");
