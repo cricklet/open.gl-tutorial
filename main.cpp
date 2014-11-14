@@ -15,13 +15,18 @@
 
 #include <SOIL/soil.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 bool checkErrors(const char *filename, int line) {
   bool result = false;
-  
+
   GLenum error;
   while ((error = glGetError()) != GL_NO_ERROR) {
     std::string str;
- 
+
     switch(error) {
     case GL_INVALID_OPERATION:
       str="INVALID_OPERATION"; break;
@@ -34,7 +39,7 @@ bool checkErrors(const char *filename, int line) {
     case GL_INVALID_FRAMEBUFFER_OPERATION:
       str="INVALID_FRAMEBUFFER_OPERATION";  break;
     }
- 
+
     // std::cerr << "GL_" << str.c_str() << "\n";
     std::cerr << "GL_" << str.c_str() << " - "<< filename << ":" << line << "\n";
     result = true;
@@ -49,7 +54,7 @@ GLuint loadTexture(const char *filename, int index) {
   glGenTextures(1, &tex);
   glActiveTexture(GL_TEXTURE0 + (GLuint) index);
   glBindTexture(GL_TEXTURE_2D, tex);
-  
+
   int width, height;
   unsigned char* image =
     SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
@@ -74,7 +79,7 @@ char *getFileContents(const char *filename) {
   if (!file) {
     throw std::runtime_error(std::string("Failed to open file: ") + filename);
   }
-  
+
   // how big is the file?
   fseek(file , 0L , SEEK_END);
   fileSize = ftell(file);
@@ -91,7 +96,7 @@ char *getFileContents(const char *filename) {
   if (result != 1) {
     throw std::runtime_error(std::string("Failed to copy file: ") + filename);
   }
-  
+
   fclose(file);
   return buffer;
 }
@@ -107,7 +112,7 @@ GLuint compileShader (const char *filename, GLenum shaderType) {
   GLuint shader = glCreateShader(shaderType);
   glShaderSource(shader, 1, &fileContents, NULL);
   glCompileShader(shader);
-  
+
   // Print shader compile errors.
   GLint status;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
@@ -139,22 +144,59 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   GLfloat vertices[] = {
-    0.5f,  0.5f,  1,0,0, 0,0, // position, rgb, tex-coord
-    0.5f, -0.5f,  0,1,0, 0,1,
-    -0.5f, -0.5f, 0,0,1, 1,1,
-    -0.5f, 0.5f,  1,0,1, 1,0
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, //xyz rgb uv
+     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
   };
 
-  GLuint vertexStride = sizeof(GLfloat) * 7;
+  GLuint vertexStride = sizeof(GLfloat) * 8;
   void *positionOffset = 0;
-  void *colorOffset = (void *) (2 * sizeof(GLfloat));
-  void *texOffset   = (void *) (5 * sizeof(GLfloat));
+  void *colorOffset = (void *) (3 * sizeof(GLfloat));
+  void *texOffset   = (void *) (6 * sizeof(GLfloat));
 
-  GLuint elements[] = {
+  /* GLuint elements[] = {
     0, 1, 2, 3, 0, 2
-  };
+    }; */
 
-  GLuint numElements = 6;
+  GLuint numElements = 36;
 
   // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
   // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
@@ -178,11 +220,11 @@ int main (int argv, char *argc[]) {
 
   // We want to be able to render the vertices in any order (with repetition). To do this, we
   // create an element array buffer object.
-  GLuint ebo;
+  /*GLuint ebo;
   glGenBuffers(1, &ebo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-  checkErrors();
+  checkErrors();*/
 
   // We can store 2d textures in the same kind of buffer.
   int texKittenIndex = 0;
@@ -195,7 +237,7 @@ int main (int argv, char *argc[]) {
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
   GLuint fragShader = compileShader("screen.frag", GL_FRAGMENT_SHADER);
   checkErrors();
-  
+
   GLuint shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, vertShader);
   glAttachShader(shaderProgram, fragShader);
@@ -211,11 +253,11 @@ int main (int argv, char *argc[]) {
   glLinkProgram(shaderProgram);
   glUseProgram(shaderProgram);
   checkErrors();
-  
+
   // Shader needs to know how to get the input attributes.
   GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
   glVertexAttribPointer(posAttrib,
-			2,  // size of vector i.e. vec2
+			3,  // size of vector i.e. vec2
 			GL_FLOAT,
 			GL_FALSE, // should be normalized
 			vertexStride,  // stride: # bytes between each attribute in the array
@@ -242,7 +284,9 @@ int main (int argv, char *argc[]) {
   glUniform1i(texPuppyAttrib, texPuppyIndex);
 
   GLint timeUniform = glGetUniformLocation(shaderProgram, "time");
-
+  GLint modelTransUniform = glGetUniformLocation(shaderProgram, "inVertModelTrans");
+  GLint viewTransUniform  = glGetUniformLocation(shaderProgram, "inVertViewTrans");
+  GLint projTransUniform  = glGetUniformLocation(shaderProgram, "inVertProjTrans");
   checkErrors();
 
   struct timeval t;
@@ -265,12 +309,34 @@ int main (int argv, char *argc[]) {
     // Clear the screen to black
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    
-    // Vary the color attribute
+
+    // Vary the time uniform
     glUniform1f(timeUniform, time);
 
-    // glDrawArrays(GL_TRIANGLES, 0 /*skip*/, 3 /*num*/);
-    glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
+    glm::mat4 modelTrans;
+    modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
+
+    glm::mat4 viewTrans;
+    viewTrans = glm::lookAt(
+      glm::vec3(1.2f, 1.2f, 1.2f), // location of camera
+      glm::vec3(0,0,0), // direction of camera
+      glm::vec3(0,0,1)  // camera up vector
+    );
+
+    glm::mat4 projTrans;
+    projTrans = glm::perspective(
+      45.0f, // fov y
+      800.0f / 600.0f, // aspect
+      0.2f,  // near
+      10.0f  //far
+    );
+
+    glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
+    glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
+    glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
+
+    glDrawArrays(GL_TRIANGLES, 0 /*skip*/, numElements /*num*/);
+    // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
@@ -282,12 +348,12 @@ int main (int argv, char *argc[]) {
   glDeleteShader(fragShader);
   glDeleteShader(vertShader);
 
-  glDeleteBuffers(1, &ebo);
+  //glDeleteBuffers(1, &ebo);
   glDeleteBuffers(1, &vbo);
 
   glDeleteVertexArrays(1, &vao);
 
   SDL_GL_DeleteContext(context);
-  SDL_Quit();  
+  SDL_Quit();
   return 0;
 }
