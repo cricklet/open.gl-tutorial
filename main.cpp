@@ -129,20 +129,7 @@ GLuint compileShader (const char *filename, GLenum shaderType) {
   return shader;
 }
 
-int main (int argv, char *argc[]) {
-  SDL_Init(SDL_INIT_VIDEO);
-
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
-  SDL_GLContext context = SDL_GL_CreateContext(window);
-
-  glewExperimental = GL_TRUE; // necessary for modern opengl calls
-  glewInit();
-  checkErrors();
-
+int generateVBO(GLuint shaderProgram) {
   GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, //xyz rgb uv
      0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
@@ -191,6 +178,67 @@ int main (int argv, char *argc[]) {
   void *positionOffset = 0;
   void *colorOffset = (void *) (3 * sizeof(GLfloat));
   void *texOffset   = (void *) (6 * sizeof(GLfloat));
+  
+  // We don't want to have to copy vertices to the GPU every time we render. Instead, we can copy
+  // the vertex information into a vertex buffer object.
+  GLuint vbo;
+  glGenBuffers(1, &vbo); // generate one buffer object name
+  glBindBuffer(GL_ARRAY_BUFFER, // target to bind to
+	       vbo);
+  glBufferData(GL_ARRAY_BUFFER, // target buffer object
+	       sizeof(vertices),
+	       vertices,
+	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
+  checkErrors();
+
+  // Shader needs to know how to get the input attributes.
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
+  glVertexAttribPointer(posAttrib,
+			3,  // size of vector i.e. vec2
+			GL_FLOAT,
+			GL_FALSE, // should be normalized
+			vertexStride,  // stride: # bytes between each attribute in the array
+			0); // offset: # bytes from the start of the array
+  glEnableVertexAttribArray(posAttrib);
+  checkErrors();
+
+  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
+  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE,
+			vertexStride,
+			colorOffset);
+  glEnableVertexAttribArray(colorAttrib);
+  checkErrors();
+
+  GLint texCoordAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
+  glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE,
+			vertexStride,
+			texOffset);
+  glEnableVertexAttribArray(texCoordAttrib);
+  checkErrors();
+
+  return vbo;
+}
+
+int main (int argv, char *argc[]) {
+  SDL_Init(SDL_INIT_VIDEO);
+
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
+  SDL_GLContext context = SDL_GL_CreateContext(window);
+
+  glewExperimental = GL_TRUE; // necessary for modern opengl calls
+  glewInit();
+  checkErrors();
+
+  GLfloat stencilVertices[] = {
+    0, 0,
+    0, 1,
+    1, 1,
+    1, 0
+  };
 
   /* GLuint elements[] = {
     0, 1, 2, 3, 0, 2
@@ -206,17 +254,11 @@ int main (int argv, char *argc[]) {
   glBindVertexArray(vao);
   checkErrors();
 
-  // We don't want to have to copy vertices to the GPU every time we render. Instead, we can copy
-  // the vertex information into a vertex buffer object.
-  GLuint vbo;
-  glGenBuffers(1, &vbo); // generate one buffer object name
-  glBindBuffer(GL_ARRAY_BUFFER, // target to bind to
-	       vbo);
-  glBufferData(GL_ARRAY_BUFFER, // target buffer object
-	       sizeof(vertices),
-	       vertices,
-	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
-  checkErrors();
+  // Setup vertex buffer object for stencil vertices
+  /*GLuint stencilVbo;
+  glGenBuffers(1, &stencilVbo);
+  glBindBuffer(GL_ARRAY_BUFFER, stencilVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(stencilVertices), stencilVertices, GL_STATIC_DRAW); */
 
   // We want to be able to render the vertices in any order (with repetition). To do this, we
   // create an element array buffer object.
@@ -254,28 +296,14 @@ int main (int argv, char *argc[]) {
   glUseProgram(shaderProgram);
   checkErrors();
 
-  // Shader needs to know how to get the input attributes.
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
-  glVertexAttribPointer(posAttrib,
-			3,  // size of vector i.e. vec2
-			GL_FLOAT,
-			GL_FALSE, // should be normalized
-			vertexStride,  // stride: # bytes between each attribute in the array
-			0); // offset: # bytes from the start of the array
-  glEnableVertexAttribArray(posAttrib);
+  // Setup vertex buffer object for cube.
+  // Must happen after glUseProgram because it sets up attrib locations.
+  GLuint vbo = generateVBO(shaderProgram);
+  checkErrors();
 
-  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
-  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE,
-			vertexStride,
-			colorOffset);
-  glEnableVertexAttribArray(colorAttrib);
-
-  GLint texCoordAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
-  glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE,
-			vertexStride,
-			texOffset);
-  glEnableVertexAttribArray(texCoordAttrib);
-
+  // Automatically disregard fragments that fail a depth test or a stencil test
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_STENCIL_TEST);
 
   GLint texKittenAttrib = glGetUniformLocation(shaderProgram, "texKitten");
   glUniform1i(texKittenAttrib, texKittenIndex);
@@ -305,10 +333,14 @@ int main (int argv, char *argc[]) {
     gettimeofday(&t, NULL);
     long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
     float time = (float) (currentTime - startTime) / 1000.0f;
+    
+    ///////////////////////////////////////////////////////////////////////////////////////
+    // Draw the 3d scene
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     // Clear the screen to black
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Vary the time uniform
     glUniform1f(timeUniform, time);
