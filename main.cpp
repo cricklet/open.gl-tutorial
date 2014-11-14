@@ -171,7 +171,14 @@ int generateVBO(GLuint shaderProgram) {
      0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
      0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
     -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+    -1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+    1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+    1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+    -1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    -1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
   };
 
   GLuint vertexStride = sizeof(GLfloat) * 8;
@@ -219,62 +226,7 @@ int generateVBO(GLuint shaderProgram) {
   return vbo;
 }
 
-int main (int argv, char *argc[]) {
-  SDL_Init(SDL_INIT_VIDEO);
-
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
-  SDL_GLContext context = SDL_GL_CreateContext(window);
-
-  glewExperimental = GL_TRUE; // necessary for modern opengl calls
-  glewInit();
-  checkErrors();
-
-  GLfloat stencilVertices[] = {
-    0, 0,
-    0, 1,
-    1, 1,
-    1, 0
-  };
-
-  /* GLuint elements[] = {
-    0, 1, 2, 3, 0, 2
-    }; */
-
-  GLuint numElements = 36;
-
-  // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
-  // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
-  // a vertex array object.
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-  checkErrors();
-
-  // Setup vertex buffer object for stencil vertices
-  /*GLuint stencilVbo;
-  glGenBuffers(1, &stencilVbo);
-  glBindBuffer(GL_ARRAY_BUFFER, stencilVbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(stencilVertices), stencilVertices, GL_STATIC_DRAW); */
-
-  // We want to be able to render the vertices in any order (with repetition). To do this, we
-  // create an element array buffer object.
-  /*GLuint ebo;
-  glGenBuffers(1, &ebo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-  checkErrors();*/
-
-  // We can store 2d textures in the same kind of buffer.
-  int texKittenIndex = 0;
-  GLuint texKitten = loadTexture("kitten.png", texKittenIndex);
-
-  int texPuppyIndex = 1;
-  GLuint texPuppy = loadTexture("puppy.png", texPuppyIndex);
-
+GLuint generateShaderProgram() {
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
   GLuint fragShader = compileShader("screen.frag", GL_FRAGMENT_SHADER);
@@ -293,29 +245,108 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   glLinkProgram(shaderProgram);
-  glUseProgram(shaderProgram);
   checkErrors();
+  
+  return shaderProgram;
+}
 
-  // Setup vertex buffer object for cube.
-  // Must happen after glUseProgram because it sets up attrib locations.
-  GLuint vbo = generateVBO(shaderProgram);
-  checkErrors();
+void setupTextures(GLuint shaderProgram) {
+  // We can store 2d textures in a texture buffer
+  int texKittenIndex = 0;
+  GLuint texKitten = loadTexture("kitten.png", texKittenIndex);
 
-  // Automatically disregard fragments that fail a depth test or a stencil test
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_STENCIL_TEST);
+  int texPuppyIndex = 1;
+  GLuint texPuppy = loadTexture("puppy.png", texPuppyIndex);
 
   GLint texKittenAttrib = glGetUniformLocation(shaderProgram, "texKitten");
   glUniform1i(texKittenAttrib, texKittenIndex);
 
   GLint texPuppyAttrib = glGetUniformLocation(shaderProgram, "texPuppy");
   glUniform1i(texPuppyAttrib, texPuppyIndex);
+}
 
+int main (int argv, char *argc[]) {
+  SDL_Init(SDL_INIT_VIDEO);
+
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+  SDL_Window *window = SDL_CreateWindow("OpenGL", 100, 100, 640, 480, SDL_WINDOW_OPENGL);
+  SDL_GLContext context = SDL_GL_CreateContext(window);
+
+  glewExperimental = GL_TRUE; // necessary for modern opengl calls
+  glewInit();
+  checkErrors();
+
+  /* GLuint elements[] = {
+    0, 1, 2, 3, 0, 2
+    }; */
+
+  // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
+  // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
+  // a vertex array object.
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  checkErrors();
+
+  // We want to be able to render the vertices in any order (with repetition). To do this, we
+  // create an element array buffer object.
+  /*GLuint ebo;
+  glGenBuffers(1, &ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+  checkErrors();*/
+  
+  // Generate shader for rendering cube
+  GLuint shaderProgram = generateShaderProgram();
+  glUseProgram(shaderProgram);
+  checkErrors();
+
+  // Get shader program varying uniforms
+  GLint overrideColor = glGetUniformLocation(shaderProgram, "overrideColor");
   GLint timeUniform = glGetUniformLocation(shaderProgram, "time");
   GLint modelTransUniform = glGetUniformLocation(shaderProgram, "inVertModelTrans");
   GLint viewTransUniform  = glGetUniformLocation(shaderProgram, "inVertViewTrans");
   GLint projTransUniform  = glGetUniformLocation(shaderProgram, "inVertProjTrans");
   checkErrors();
+
+  // Setup vertex buffer object for cube.
+  // Must happen after glUseProgram because it sets up attrib locations.
+  GLuint vbo = generateVBO(shaderProgram);
+  int cubeStart = 0;
+  int cubeElements = 36;
+  int floorStart = 36;
+  int floorElements = 6;
+
+  checkErrors();
+
+  // Setup textures
+  setupTextures(shaderProgram);
+
+  // Automatically disregard fragments that fail a depth test or a stencil test
+  glUseProgram(shaderProgram);
+
+  glm::mat4 viewTrans;
+  viewTrans = glm::lookAt(
+    glm::vec3(3.0f, 1.0f, 1.0f), // location of camera
+    glm::vec3(0,0,0), // direction of camera
+    glm::vec3(0,0,1)  // camera up vector
+  );
+
+  glm::mat4 projTrans;
+  projTrans = glm::perspective(
+    45.0f, // fov y
+    800.0f / 600.0f, // aspect
+    0.2f,  // near
+    10.0f  //far
+  );
+  glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
+  glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
+
+  // Use depth test
+  glEnable(GL_DEPTH_TEST);
 
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -339,46 +370,64 @@ int main (int argv, char *argc[]) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     // Clear the screen to black
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // Vary the time uniform
     glUniform1f(timeUniform, time);
-
+    
+    // Setup model transform
     glm::mat4 modelTrans;
     modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
-
-    glm::mat4 viewTrans;
-    viewTrans = glm::lookAt(
-      glm::vec3(1.2f, 1.2f, 1.2f), // location of camera
-      glm::vec3(0,0,0), // direction of camera
-      glm::vec3(0,0,1)  // camera up vector
-    );
-
-    glm::mat4 projTrans;
-    projTrans = glm::perspective(
-      45.0f, // fov y
-      800.0f / 600.0f, // aspect
-      0.2f,  // near
-      10.0f  //far
-    );
-
     glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
-    glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
-    glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
 
-    glDrawArrays(GL_TRIANGLES, 0 /*skip*/, numElements /*num*/);
+    // Draw cube
+    glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
+    
+    // Time for fancy stencil rendering
+    glEnable(GL_STENCIL_TEST);
+
+      // Draw floor
+      glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 if depth & stencil pass
+      glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+      glDepthMask(GL_FALSE); // don't write to depth buffer
+      glClear(GL_STENCIL_BUFFER_BIT); // clear the stencil
+
+      glStencilMask(0xFF); // write to stencil buffer
+      glDrawArrays(GL_TRIANGLES, floorStart, floorElements);
+
+      // Get ready to draw reflection
+      glStencilFunc(GL_EQUAL, 1, 0xFF); // pass test if stencil value is 1
+      glDepthMask(GL_TRUE); // reenable depth
+      glStencilMask(0x00); // redisable stencil
+
+      // Flip model transform (reflection)
+      modelTrans = glm::scale(
+	glm::translate(modelTrans, glm::vec3(0,0,-1)),
+	glm::vec3(1,1,-1)
+      );
+      glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
+
+      // Draw reflection
+      glUniform3f(overrideColor, 0.3f, 0.3f, 0.3f);
+      glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
+      glUniform3f(overrideColor, 1.0f, 1.0f, 1.0f);
+
+    // We're done with the stencil rendering
+    glDisable(GL_STENCIL_TEST);
+
     // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
   }
 
-  glDeleteTextures(1, &texKitten);
+  // glDeleteTextures(1, &texKitten);
+  // glDeleteTextures(1, &texPuppy);
 
   glDeleteProgram(shaderProgram);
-  glDeleteShader(fragShader);
-  glDeleteShader(vertShader);
+  // glDeleteShader(fragShader);
+  // glDeleteShader(vertShader);
 
   //glDeleteBuffers(1, &ebo);
   glDeleteBuffers(1, &vbo);
