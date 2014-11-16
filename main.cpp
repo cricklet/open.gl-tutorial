@@ -267,6 +267,7 @@ void setupTextures(GLuint shaderProgram) {
 
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -388,12 +389,14 @@ int main (int argv, char *argc[]) {
     glEnable(GL_STENCIL_TEST);
 
       // Draw floor
-      glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 if depth & stencil pass
+      glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 where rendered
       glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
       glDepthMask(GL_FALSE); // don't write to depth buffer
+      glStencilMask(0xFF); // write to stencil buffer
+
       glClear(GL_STENCIL_BUFFER_BIT); // clear the stencil
 
-      glStencilMask(0xFF); // write to stencil buffer
       glDrawArrays(GL_TRIANGLES, floorStart, floorElements);
 
       // Get ready to draw reflection
