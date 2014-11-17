@@ -129,7 +129,7 @@ GLuint compileShader (const char *filename, GLenum shaderType) {
   return shader;
 }
 
-int generateVBO(GLuint shaderProgram) {
+int generateSceneVBO(GLuint shaderProgram) {
   GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, //xyz rgb uv
      0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
@@ -266,10 +266,10 @@ GLuint generateFramebuffer() {
   return fbo;
 }
 
-GLuint generateShaderProgram() {
+GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
   // Load the shaders from the filesystem.
-  GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
-  GLuint fragShader = compileShader("screen.frag", GL_FRAGMENT_SHADER);
+  GLuint vertShader = compileShader(vertSource, GL_VERTEX_SHADER);
+  GLuint fragShader = compileShader(fragSource, GL_FRAGMENT_SHADER);
   checkErrors();
 
   GLuint shaderProgram = glCreateProgram();
@@ -343,23 +343,28 @@ int main (int argv, char *argc[]) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
   checkErrors();*/
+
+  // Generate shader for rendering buffer
+  GLuint renderBufferProgram = generateShaderProgram("render_buffer.vert", "render_buffer.frag");
+  glUseProgram(renderBufferProgram);
+  checkErrors();
   
   // Generate shader for rendering cube
-  GLuint shaderProgram = generateShaderProgram();
-  glUseProgram(shaderProgram);
+  GLuint renderSceneProgram = generateShaderProgram("render_scene.vert", "render_scene.frag");
+  glUseProgram(renderSceneProgram);
   checkErrors();
 
   // Get shader program varying uniforms
-  GLint overrideColor = glGetUniformLocation(shaderProgram, "overrideColor");
-  GLint timeUniform = glGetUniformLocation(shaderProgram, "time");
-  GLint modelTransUniform = glGetUniformLocation(shaderProgram, "inVertModelTrans");
-  GLint viewTransUniform  = glGetUniformLocation(shaderProgram, "inVertViewTrans");
-  GLint projTransUniform  = glGetUniformLocation(shaderProgram, "inVertProjTrans");
+  GLint overrideColor = glGetUniformLocation(renderSceneProgram, "overrideColor");
+  GLint timeUniform = glGetUniformLocation(renderSceneProgram, "time");
+  GLint modelTransUniform = glGetUniformLocation(renderSceneProgram, "inVertModelTrans");
+  GLint viewTransUniform  = glGetUniformLocation(renderSceneProgram, "inVertViewTrans");
+  GLint projTransUniform  = glGetUniformLocation(renderSceneProgram, "inVertProjTrans");
   checkErrors();
 
   // Setup vertex buffer object for cube.
   // Must happen after glUseProgram because it sets up attrib locations.
-  GLuint vbo = generateVBO(shaderProgram);
+  GLuint sceneVBO = generateSceneVBO(renderSceneProgram);
   int cubeStart = 0;
   int cubeElements = 36;
   int floorStart = 36;
@@ -368,10 +373,7 @@ int main (int argv, char *argc[]) {
   checkErrors();
 
   // Setup textures
-  setupTextures(shaderProgram);
-
-  // Automatically disregard fragments that fail a depth test or a stencil test
-  glUseProgram(shaderProgram);
+  setupTextures(renderSceneProgram);
 
   glm::mat4 viewTrans;
   viewTrans = glm::lookAt(
@@ -390,8 +392,9 @@ int main (int argv, char *argc[]) {
   glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
   glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
 
-  // Let's render to our own framebuffer
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  // Let's render to the screen
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glUseProgram(renderSceneProgram);
 
   // Use depth test
   glEnable(GL_DEPTH_TEST);
@@ -415,7 +418,7 @@ int main (int argv, char *argc[]) {
     
     ///////////////////////////////////////////////////////////////////////////////////////
     // Draw the 3d scene
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, sceneVBO);
 
     // Clear the screen to black
     glClearColor(1, 1, 1, 1);
@@ -467,9 +470,9 @@ int main (int argv, char *argc[]) {
     glDisable(GL_STENCIL_TEST);
 
     // Double check that our rendering worked
-    GLfloat data[4];
-    glReadPixels(0,0,1,1, GL_RGBA, GL_FLOAT, &data);
-    printf("%f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
+    // GLfloat data[4];
+    // glReadPixels(0,0,1,1, GL_RGBA, GL_FLOAT, &data);
+    // printf("%f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
 
     // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
@@ -480,12 +483,12 @@ int main (int argv, char *argc[]) {
   // glDeleteTextures(1, &texKitten);
   // glDeleteTextures(1, &texPuppy);
 
-  glDeleteProgram(shaderProgram);
+  glDeleteProgram(renderSceneProgram);
   // glDeleteShader(fragShader);
   // glDeleteShader(vertShader);
 
   //glDeleteBuffers(1, &ebo);
-  glDeleteBuffers(1, &vbo);
+  glDeleteBuffers(1, &sceneVBO);
 
   glDeleteVertexArrays(1, &vao);
 
