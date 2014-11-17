@@ -226,6 +226,46 @@ int generateVBO(GLuint shaderProgram) {
   return vbo;
 }
 
+GLuint generateFramebuffer() {
+  GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  checkErrors();
+
+  // Create a texture for use by this framebuffer
+  GLuint fboTexture;
+  glGenTextures(1, &fboTexture);
+  glBindTexture(GL_TEXTURE_2D, fboTexture);
+  checkErrors();
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  checkErrors();
+  
+  // Bind the texture to the frambuffer
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+  checkErrors();
+
+  // Create a render buffer object for use by this framebuffer
+  GLuint fboRenderBuffer;
+  glGenRenderbuffers(1, &fboRenderBuffer);
+  glBindRenderbuffer(GL_RENDERBUFFER, fboRenderBuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, 
+			    GL_RENDERBUFFER, fboRenderBuffer);
+  checkErrors();
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cerr << "glCheckFramebufferStatus() failed\n";
+  }
+
+  // Return to rendering to the default framebuffer (the screen)
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  return fbo;
+}
+
 GLuint generateShaderProgram() {
   // Load the shaders from the filesystem.
   GLuint vertShader = compileShader("screen.vert", GL_VERTEX_SHADER);
@@ -292,6 +332,10 @@ int main (int argv, char *argc[]) {
   glBindVertexArray(vao);
   checkErrors();
 
+  // We sometimes don't want to render directly to the screen. Let's render to a frame buffer
+  // instead.
+  GLuint fbo = generateFramebuffer();
+
   // We want to be able to render the vertices in any order (with repetition). To do this, we
   // create an element array buffer object.
   /*GLuint ebo;
@@ -345,6 +389,9 @@ int main (int argv, char *argc[]) {
   );
   glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
   glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
+
+  // Let's render to our own framebuffer
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   // Use depth test
   glEnable(GL_DEPTH_TEST);
@@ -418,6 +465,11 @@ int main (int argv, char *argc[]) {
 
     // We're done with the stencil rendering
     glDisable(GL_STENCIL_TEST);
+
+    // Double check that our rendering worked
+    GLfloat data[4];
+    glReadPixels(0,0,1,1, GL_RGBA, GL_FLOAT, &data);
+    printf("%f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
 
     // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
