@@ -12,4 +12,5 @@ private:
   GLuint vbo;
   GLuint texKitten;
   GLuint texPuppy;
+  GLuint shaderProgram;
 };
