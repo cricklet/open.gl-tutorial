@@ -20,6 +20,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "scene.h"
+
 bool checkErrors(const char *filename, int line) {
   bool result = false;
 
@@ -129,6 +131,41 @@ GLuint compileShader (const char *filename, GLenum shaderType) {
   return shader;
 }
 
+int generateFrameVBO(GLuint shaderProgram) {
+  GLfloat vertices[] = {
+    -1, -1,  0, 0,
+    -1, 1,   0, 1,
+    1, 1,    1, 1,
+
+    1, 1,    1, 1,
+    1, -1,   1, 0,
+    -1, -1,  0, 0,
+  };
+
+  GLuint vertexStride = sizeof(GLfloat) * 4;
+  void *positionOffset = 0;
+  void *coordOffset = (void *) (2 * sizeof(GLfloat));
+
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  checkErrors();
+
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, positionOffset);
+  glEnableVertexAttribArray(posAttrib);
+  checkErrors();
+
+  GLint coordAttrib = glGetAttribLocation(shaderProgram, "inVertBufferCoord");
+  glVertexAttribPointer(coordAttrib, 2, GL_FLOAT, GL_FALSE, vertexStride, coordOffset);
+  glEnableVertexAttribArray(coordAttrib);
+  checkErrors();
+  
+
+  return vbo;
+}
+
 int generateSceneVBO(GLuint shaderProgram) {
   GLfloat vertices[] = {
     -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, //xyz rgb uv
@@ -205,7 +242,7 @@ int generateSceneVBO(GLuint shaderProgram) {
 			GL_FLOAT,
 			GL_FALSE, // should be normalized
 			vertexStride,  // stride: # bytes between each attribute in the array
-			0); // offset: # bytes from the start of the array
+			positionOffset); // offset: # bytes from the start of the array
   glEnableVertexAttribArray(posAttrib);
   checkErrors();
 
@@ -320,6 +357,8 @@ int main (int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
+  CubeScene *scene = new CubeScene();
+
   /* GLuint elements[] = {
     0, 1, 2, 3, 0, 2
     }; */
@@ -369,8 +408,11 @@ int main (int argv, char *argc[]) {
   int cubeElements = 36;
   int floorStart = 36;
   int floorElements = 6;
-
   checkErrors();
+
+  // Setup vbo for the quad for drawing the fbo
+  GLuint frameVBO = generateFrameVBO(renderBufferProgram);
+  int frameVBOElements = 6;
 
   // Setup textures
   setupTextures(renderSceneProgram);
@@ -392,13 +434,6 @@ int main (int argv, char *argc[]) {
   glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
   glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
 
-  // Let's render to the screen
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glUseProgram(renderSceneProgram);
-
-  // Use depth test
-  glEnable(GL_DEPTH_TEST);
-
   struct timeval t;
   gettimeofday(&t, NULL);
   long int startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
@@ -418,56 +453,72 @@ int main (int argv, char *argc[]) {
     
     ///////////////////////////////////////////////////////////////////////////////////////
     // Draw the 3d scene
+    // Let's render to the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, sceneVBO);
+    glUseProgram(renderSceneProgram);
 
-    // Clear the screen to black
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+      // Use depth test
+      glEnable(GL_DEPTH_TEST);
 
-    // Vary the time uniform
-    glUniform1f(timeUniform, time);
-    
-    // Setup model transform
-    glm::mat4 modelTrans;
-    modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
-    glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
+      // Clear the screen to black
+      glClearColor(1, 1, 1, 1);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    // Draw cube
-    glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
-    
-    // Time for fancy stencil rendering
-    glEnable(GL_STENCIL_TEST);
+      // Vary the time uniform
+      glUniform1f(timeUniform, time);
 
-      // Draw floor
-      glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 where rendered
-      glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-      glDepthMask(GL_FALSE); // don't write to depth buffer
-      glStencilMask(0xFF); // write to stencil buffer
-
-      glClear(GL_STENCIL_BUFFER_BIT); // clear the stencil
-
-      glDrawArrays(GL_TRIANGLES, floorStart, floorElements);
-
-      // Get ready to draw reflection
-      glStencilFunc(GL_EQUAL, 1, 0xFF); // pass test if stencil value is 1
-      glDepthMask(GL_TRUE); // reenable depth
-      glStencilMask(0x00); // redisable stencil
-
-      // Flip model transform (reflection)
-      modelTrans = glm::scale(
-	glm::translate(modelTrans, glm::vec3(0,0,-1)),
-	glm::vec3(1,1,-1)
-      );
+      // Setup model transform
+      glm::mat4 modelTrans;
+      modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
       glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
 
-      // Draw reflection
-      glUniform3f(overrideColor, 0.3f, 0.3f, 0.3f);
+      // Draw cube
       glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
-      glUniform3f(overrideColor, 1.0f, 1.0f, 1.0f);
 
-    // We're done with the stencil rendering
-    glDisable(GL_STENCIL_TEST);
+      // Time for fancy stencil rendering
+      glEnable(GL_STENCIL_TEST);
+
+	// Draw floor
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 where rendered
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	glDepthMask(GL_FALSE); // don't write to depth buffer
+	glStencilMask(0xFF); // write to stencil buffer
+
+	glClear(GL_STENCIL_BUFFER_BIT); // clear the stencil
+
+	glDrawArrays(GL_TRIANGLES, floorStart, floorElements);
+
+	// Get ready to draw reflection
+	glStencilFunc(GL_EQUAL, 1, 0xFF); // pass test if stencil value is 1
+	glDepthMask(GL_TRUE); // reenable depth
+	glStencilMask(0x00); // redisable stencil
+
+	// Flip model transform (reflection)
+	modelTrans = glm::scale(
+	  glm::translate(modelTrans, glm::vec3(0,0,-1)),
+	  glm::vec3(1,1,-1)
+	);
+	glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
+
+	// Draw reflection
+	glUniform3f(overrideColor, 0.3f, 0.3f, 0.3f);
+	glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
+	glUniform3f(overrideColor, 1.0f, 1.0f, 1.0f);
+
+      // We're done with the stencil rendering
+      glDisable(GL_STENCIL_TEST);
+
+    /*glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(renderBufferProgram);
+
+      // Disable tests
+      glDisable(GL_DEPTH_TEST);
+
+      // Render the fbo quad
+      glBindBuffer(GL_ARRAY_BUFFER, frameVBO);
+      glDrawArrays(GL_TRIANGLES, 0, frameVBOElements);*/
 
     // Double check that our rendering worked
     // GLfloat data[4];
