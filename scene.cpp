@@ -151,23 +151,14 @@ CubeScene::CubeScene () {
   );
   glUniformMatrix4fv(this->viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
   glUniformMatrix4fv(this->projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
-
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  this->startTime = t.tv_sec * 1000 + t.tv_usec / 1000;
- }
+}
 
 CubeScene::~CubeScene () {
   
 }
 
 void
-CubeScene::Render () {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  long int currentTime = t.tv_sec * 1000 + t.tv_usec / 1000;
-  float time = (float) (currentTime - this->startTime) / 1000.0f;
-      
+CubeScene::Render (float time) {
   ///////////////////////////////////////////////////////////////////////////////////////
   // Draw the 3d scene
   // Let's render our set of vertices and along with it's attributes
@@ -181,6 +172,7 @@ CubeScene::Render () {
   // Clear the screen to black
   glClearColor(1, 1, 1, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glUniform3f(overrideColor, 1.0f, 1.0f, 1.0f);
 
   // Vary the time uniform
   glUniform1f(timeUniform, time);

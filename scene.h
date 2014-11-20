@@ -12,7 +12,7 @@ class CubeScene {
 public:
   CubeScene();
   ~CubeScene();
-  void Render();
+  void Render(float time);
 
 private:
   GLuint vao;
@@ -31,6 +31,4 @@ private:
 
   glm::mat4 viewTrans;
   glm::mat4 projTrans;
-
-  long int startTime;
 };

@@ -56,103 +56,6 @@ int generateFrameVBO(GLuint shaderProgram) {
   return vbo;
 }
 
-int generateSceneVBO(GLuint shaderProgram) {
-  GLfloat vertices[] = {
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, //xyz rgb uv
-     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-
-    -1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-    1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-    1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-    1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-    -1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-    -1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-  };
-
-  GLuint vertexStride = sizeof(GLfloat) * 8;
-  void *positionOffset = 0;
-  void *colorOffset = (void *) (3 * sizeof(GLfloat));
-  void *texOffset   = (void *) (6 * sizeof(GLfloat));
-  
-  // We don't want to have to copy vertices to the GPU every time we render. Instead, we can copy
-  // the vertex information into a vertex buffer object.
-  GLuint vbo;
-  glGenBuffers(1, &vbo); // generate one buffer object name
-  glBindBuffer(GL_ARRAY_BUFFER, // target to bind to
-	       vbo);
-  glBufferData(GL_ARRAY_BUFFER, // target buffer object
-	       sizeof(vertices),
-	       vertices,
-	       GL_STATIC_DRAW); // vs GL_DYNAMIC_DRAW vs GL_STREAM_DRAW
-  checkErrors();
-
-  // Shader needs to know how to get the input attributes.
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "inVertPosition");
-  glVertexAttribPointer(posAttrib,
-			3,  // size of vector i.e. vec2
-			GL_FLOAT,
-			GL_FALSE, // should be normalized
-			vertexStride,  // stride: # bytes between each attribute in the array
-			positionOffset); // offset: # bytes from the start of the array
-  glEnableVertexAttribArray(posAttrib);
-  checkErrors();
-
-  GLint colorAttrib = glGetAttribLocation(shaderProgram, "inVertColor");
-  glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE,
-			vertexStride,
-			colorOffset);
-  glEnableVertexAttribArray(colorAttrib);
-  checkErrors();
-
-  GLint texCoordAttrib = glGetAttribLocation(shaderProgram, "inVertTexCoord");
-  glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE,
-			vertexStride,
-			texOffset);
-  glEnableVertexAttribArray(texCoordAttrib);
-  checkErrors();
-
-  return vbo;
-}
-
 GLuint generateFramebuffer() {
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
@@ -193,21 +96,6 @@ GLuint generateFramebuffer() {
   return fbo;
 }
 
-void setupTextures(GLuint shaderProgram) {
-  // We can store 2d textures in a texture buffer
-  int texKittenIndex = 0;
-  GLuint texKitten = loadTexture("kitten.png", texKittenIndex);
-
-  int texPuppyIndex = 1;
-  GLuint texPuppy = loadTexture("puppy.png", texPuppyIndex);
-
-  GLint texKittenAttrib = glGetUniformLocation(shaderProgram, "texKitten");
-  glUniform1i(texKittenAttrib, texKittenIndex);
-
-  GLint texPuppyAttrib = glGetUniformLocation(shaderProgram, "texPuppy");
-  glUniform1i(texPuppyAttrib, texPuppyIndex);
-}
-
 int main (int argv, char *argc[]) {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -223,87 +111,30 @@ int main (int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
-  CubeScene *scene = new CubeScene();
-
-  /* GLuint elements[] = {
-    0, 1, 2, 3, 0, 2
-    }; */
-
-  // We don't want to have to call glVertexAttribPointer to reset the inputs every time we enable
-  // a shader (glUseProgram). Instead, we can store all the state needed to use a shader inside
-  // a vertex array object.
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  // Generate vertex array object
+  GLuint frameVAO;
+  glGenVertexArrays(1, &frameVAO);
+  glBindVertexArray(frameVAO);
   checkErrors();
 
   // We sometimes don't want to render directly to the screen. Let's render to a frame buffer
   // instead.
   GLuint fbo = generateFramebuffer();
 
-  // We want to be able to render the vertices in any order (with repetition). To do this, we
-  // create an element array buffer object.
-  /*GLuint ebo;
-  glGenBuffers(1, &ebo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-  checkErrors();*/
-
   // Generate shader for rendering buffer
   GLuint renderBufferProgram = generateShaderProgram("render_buffer.vert", "render_buffer.frag");
   glUseProgram(renderBufferProgram);
   checkErrors();
   
-  // Generate shader for rendering cube
-  GLuint renderSceneProgram = generateShaderProgram("render_scene.vert", "render_scene.frag");
-  glUseProgram(renderSceneProgram);
-  checkErrors();
-
   // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
   // to bind the user-defined varying 'out' variable to.
   glBindFragDataLocation(renderBufferProgram, 0, "outFragColor");
-  glBindFragDataLocation(renderSceneProgram, 0, "outFragColor");
-
-  // Get shader program varying uniforms
-  GLint overrideColor = glGetUniformLocation(renderSceneProgram, "overrideColor");
-  GLint timeUniform = glGetUniformLocation(renderSceneProgram, "time");
-  GLint modelTransUniform = glGetUniformLocation(renderSceneProgram, "inVertModelTrans");
-  GLint viewTransUniform  = glGetUniformLocation(renderSceneProgram, "inVertViewTrans");
-  GLint projTransUniform  = glGetUniformLocation(renderSceneProgram, "inVertProjTrans");
-  checkErrors();
-
-  // Setup vertex buffer object for cube.
-  // Must happen after glUseProgram because it sets up attrib locations.
-  GLuint sceneVBO = generateSceneVBO(renderSceneProgram);
-  int cubeStart = 0;
-  int cubeElements = 36;
-  int floorStart = 36;
-  int floorElements = 6;
-  checkErrors();
 
   // Setup vbo for the quad for drawing the fbo
   GLuint frameVBO = generateFrameVBO(renderBufferProgram);
   int frameVBOElements = 6;
 
-  // Setup textures
-  setupTextures(renderSceneProgram);
-
-  glm::mat4 viewTrans;
-  viewTrans = glm::lookAt(
-    glm::vec3(3.0f, 1.0f, 1.0f), // location of camera
-    glm::vec3(0,0,0), // direction of camera
-    glm::vec3(0,0,1)  // camera up vector
-  );
-
-  glm::mat4 projTrans;
-  projTrans = glm::perspective(
-    45.0f, // fov y
-    800.0f / 600.0f, // aspect
-    0.2f,  // near
-    10.0f  //far
-  );
-  glUniformMatrix4fv(viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
-  glUniformMatrix4fv(projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
+  CubeScene *scene = new CubeScene();
 
   struct timeval t;
   gettimeofday(&t, NULL);
@@ -326,8 +157,6 @@ int main (int argv, char *argc[]) {
     // Draw the 3d scene
     // Let's render to the framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, sceneVBO);
-    glUseProgram(renderSceneProgram);
 
     /*glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(renderBufferProgram);
@@ -346,23 +175,11 @@ int main (int argv, char *argc[]) {
 
     // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
 
-    scene->Render();
+    scene->Render(time);
 
     SDL_GL_SwapWindow(window);
     checkErrors();
   }
-
-  // glDeleteTextures(1, &texKitten);
-  // glDeleteTextures(1, &texPuppy);
-
-  glDeleteProgram(renderSceneProgram);
-  // glDeleteShader(fragShader);
-  // glDeleteShader(vertShader);
-
-  //glDeleteBuffers(1, &ebo);
-  glDeleteBuffers(1, &sceneVBO);
-
-  glDeleteVertexArrays(1, &vao);
 
   SDL_GL_DeleteContext(context);
   SDL_Quit();
