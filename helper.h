@@ -8,6 +8,35 @@
 
 #include <SOIL/soil.h>
 
+static bool checkErrors(const char *filename, int line) {
+  bool result = false;
+
+  GLenum error;
+  while ((error = glGetError()) != GL_NO_ERROR) {
+    std::string str;
+
+    switch(error) {
+    case GL_INVALID_OPERATION:
+      str="INVALID_OPERATION"; break;
+    case GL_INVALID_ENUM:
+      str="INVALID_ENUM"; break;
+    case GL_INVALID_VALUE:
+      str="INVALID_VALUE"; break;
+    case GL_OUT_OF_MEMORY:
+      str="OUT_OF_MEMORY"; break;
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+      str="INVALID_FRAMEBUFFER_OPERATION";  break;
+    }
+
+    // std::cerr << "GL_" << str.c_str() << "\n";
+    std::cerr << "GL_" << str.c_str() << " - "<< filename << ":" << line << "\n";
+    result = true;
+  }
+
+  return result;
+}
+#define checkErrors() checkErrors(__FILE__, __LINE__)
+
 static GLuint loadTexture(const char *filename, int index) {
   GLuint tex;
   glGenTextures(1, &tex);
@@ -90,31 +119,19 @@ static GLuint compileShader (const char *filename, GLenum shaderType) {
 }
 
 
-static bool checkErrors(const char *filename, int line) {
-  bool result = false;
+static GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
+  // Load the shaders from the filesystem.
+  GLuint vertShader = compileShader(vertSource, GL_VERTEX_SHADER);
+  GLuint fragShader = compileShader(fragSource, GL_FRAGMENT_SHADER);
+  checkErrors();
 
-  GLenum error;
-  while ((error = glGetError()) != GL_NO_ERROR) {
-    std::string str;
+  GLuint shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertShader);
+  glAttachShader(shaderProgram, fragShader);
+  checkErrors();
 
-    switch(error) {
-    case GL_INVALID_OPERATION:
-      str="INVALID_OPERATION"; break;
-    case GL_INVALID_ENUM:
-      str="INVALID_ENUM"; break;
-    case GL_INVALID_VALUE:
-      str="INVALID_VALUE"; break;
-    case GL_OUT_OF_MEMORY:
-      str="OUT_OF_MEMORY"; break;
-    case GL_INVALID_FRAMEBUFFER_OPERATION:
-      str="INVALID_FRAMEBUFFER_OPERATION";  break;
-    }
-
-    // std::cerr << "GL_" << str.c_str() << "\n";
-    std::cerr << "GL_" << str.c_str() << " - "<< filename << ":" << line << "\n";
-    result = true;
-  }
-
-  return result;
+  glLinkProgram(shaderProgram);
+  checkErrors();
+  
+  return shaderProgram;
 }
-#define checkErrors() checkErrors(__FILE__, __LINE__)

@@ -193,30 +193,6 @@ GLuint generateFramebuffer() {
   return fbo;
 }
 
-GLuint generateShaderProgram(const char *vertSource, const char *fragSource) {
-  // Load the shaders from the filesystem.
-  GLuint vertShader = compileShader(vertSource, GL_VERTEX_SHADER);
-  GLuint fragShader = compileShader(fragSource, GL_FRAGMENT_SHADER);
-  checkErrors();
-
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertShader);
-  glAttachShader(shaderProgram, fragShader);
-  checkErrors();
-
-  // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
-  // to bind the user-defined varying 'out' variable to.
-  glBindFragDataLocation(shaderProgram,
-			 0, // color number (buffer) to bind to
-			 "outFragColor");
-  checkErrors();
-
-  glLinkProgram(shaderProgram);
-  checkErrors();
-  
-  return shaderProgram;
-}
-
 void setupTextures(GLuint shaderProgram) {
   // We can store 2d textures in a texture buffer
   int texKittenIndex = 0;
@@ -283,6 +259,11 @@ int main (int argv, char *argc[]) {
   glUseProgram(renderSceneProgram);
   checkErrors();
 
+  // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
+  // to bind the user-defined varying 'out' variable to.
+  glBindFragDataLocation(renderBufferProgram, 0, "outFragColor");
+  glBindFragDataLocation(renderSceneProgram, 0, "outFragColor");
+
   // Get shader program varying uniforms
   GLint overrideColor = glGetUniformLocation(renderSceneProgram, "overrideColor");
   GLint timeUniform = glGetUniformLocation(renderSceneProgram, "time");
@@ -348,58 +329,6 @@ int main (int argv, char *argc[]) {
     glBindBuffer(GL_ARRAY_BUFFER, sceneVBO);
     glUseProgram(renderSceneProgram);
 
-      // Use depth test
-      glEnable(GL_DEPTH_TEST);
-
-      // Clear the screen to black
-      glClearColor(1, 1, 1, 1);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-      // Vary the time uniform
-      glUniform1f(timeUniform, time);
-
-      // Setup model transform
-      glm::mat4 modelTrans;
-      modelTrans = glm::rotate(modelTrans, time, glm::vec3(0,0,1));
-      glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
-
-      // Draw cube
-      glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
-
-      // Time for fancy stencil rendering
-      glEnable(GL_STENCIL_TEST);
-
-	// Draw floor
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // set stencil values to 1 where rendered
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-	glDepthMask(GL_FALSE); // don't write to depth buffer
-	glStencilMask(0xFF); // write to stencil buffer
-
-	glClear(GL_STENCIL_BUFFER_BIT); // clear the stencil
-
-	glDrawArrays(GL_TRIANGLES, floorStart, floorElements);
-
-	// Get ready to draw reflection
-	glStencilFunc(GL_EQUAL, 1, 0xFF); // pass test if stencil value is 1
-	glDepthMask(GL_TRUE); // reenable depth
-	glStencilMask(0x00); // redisable stencil
-
-	// Flip model transform (reflection)
-	modelTrans = glm::scale(
-	  glm::translate(modelTrans, glm::vec3(0,0,-1)),
-	  glm::vec3(1,1,-1)
-	);
-	glUniformMatrix4fv(modelTransUniform, 1, GL_FALSE, glm::value_ptr(modelTrans));
-
-	// Draw reflection
-	glUniform3f(overrideColor, 0.3f, 0.3f, 0.3f);
-	glDrawArrays(GL_TRIANGLES, cubeStart, cubeElements);
-	glUniform3f(overrideColor, 1.0f, 1.0f, 1.0f);
-
-      // We're done with the stencil rendering
-      glDisable(GL_STENCIL_TEST);
-
     /*glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(renderBufferProgram);
 
@@ -416,6 +345,8 @@ int main (int argv, char *argc[]) {
     // printf("%f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
 
     // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
+
+    scene->Render();
 
     SDL_GL_SwapWindow(window);
     checkErrors();
