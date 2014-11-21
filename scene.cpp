@@ -151,6 +151,8 @@ CubeScene::CubeScene () {
   );
   glUniformMatrix4fv(this->viewTransUniform,  1, GL_FALSE, glm::value_ptr(viewTrans));
   glUniformMatrix4fv(this->projTransUniform,  1, GL_FALSE, glm::value_ptr(projTrans));
+
+  glBindVertexArray(0);
 }
 
 CubeScene::~CubeScene () {

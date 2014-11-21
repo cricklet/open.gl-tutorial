@@ -64,6 +64,7 @@ GLuint generateFramebuffer() {
 
   // Create a texture for use by this framebuffer
   GLuint fboTexture;
+  glActiveTexture(nextTextureIndex());
   glGenTextures(1, &fboTexture);
   glBindTexture(GL_TEXTURE_2D, fboTexture);
   checkErrors();
@@ -111,6 +112,8 @@ int main (int argv, char *argc[]) {
   glewInit();
   checkErrors();
 
+  CubeScene *scene = new CubeScene();
+
   // Generate vertex array object
   GLuint frameVAO;
   glGenVertexArrays(1, &frameVAO);
@@ -133,8 +136,6 @@ int main (int argv, char *argc[]) {
   // Setup vbo for the quad for drawing the fbo
   GLuint frameVBO = generateFrameVBO(renderBufferProgram);
   int frameVBOElements = 6;
-
-  CubeScene *scene = new CubeScene();
 
   struct timeval t;
   gettimeofday(&t, NULL);
