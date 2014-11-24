@@ -11,5 +11,5 @@ GLuint generateShaderProgram(const char *vertSource, const char *fragSource);
 
 GLuint loadTexture(const char *filename, int index);
 
-GLuint nextTextureIndex();
+int nextTextureIndex();
 #endif

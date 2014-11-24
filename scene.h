@@ -12,7 +12,7 @@ class CubeScene {
 public:
   CubeScene();
   ~CubeScene();
-  void Render();
+  void Render(float t);
 
 private:
   GLuint vao;

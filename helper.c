@@ -38,15 +38,16 @@ bool _checkErrors(const char *filename, int line) {
   return result;
 }
 
-static GLuint _id = GL_TEXTURE0;
-GLuint nextTextureIndex() {
+static int _id = 0;
+int nextTextureIndex() {
+  std::cout << _id << "\n";
   return _id ++;
 }
 
 GLuint loadTexture(const char *filename, int index) {
   GLuint tex;
   glGenTextures(1, &tex);
-  glActiveTexture(nextTextureIndex());
+  glActiveTexture(index + GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, tex);
 
   int width, height;

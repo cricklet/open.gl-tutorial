@@ -56,7 +56,7 @@ int generateFrameVBO(GLuint shaderProgram) {
   return vbo;
 }
 
-GLuint generateFramebuffer() {
+GLuint generateFramebuffer(int textureIndex) {
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -64,12 +64,12 @@ GLuint generateFramebuffer() {
 
   // Create a texture for use by this framebuffer
   GLuint fboTexture;
-  glActiveTexture(nextTextureIndex());
+  glActiveTexture(GL_TEXTURE0 + textureIndex);
   glGenTextures(1, &fboTexture);
   glBindTexture(GL_TEXTURE_2D, fboTexture);
   checkErrors();
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL /*no data*/);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   checkErrors();
@@ -122,7 +122,8 @@ int main (int argv, char *argc[]) {
 
   // We sometimes don't want to render directly to the screen. Let's render to a frame buffer
   // instead.
-  GLuint fbo = generateFramebuffer();
+  GLuint frameTextureIndex = nextTextureIndex();
+  GLuint fbo = generateFramebuffer(frameTextureIndex);
 
   // Generate shader for rendering buffer
   GLuint renderBufferProgram = generateShaderProgram("render_buffer.vert", "render_buffer.frag");
@@ -132,6 +133,11 @@ int main (int argv, char *argc[]) {
   // Because fragment shaders can often write to multiple buffers, we need to specify which buffer
   // to bind the user-defined varying 'out' variable to.
   glBindFragDataLocation(renderBufferProgram, 0, "outFragColor");
+
+  // We also need to render the texture associated with the fbo
+  GLint texAttrib = glGetUniformLocation(renderBufferProgram, "buffer");
+  glUniform1i(texAttrib, frameTextureIndex);
+  checkErrors();
 
   // Setup vbo for the quad for drawing the fbo
   GLuint frameVBO = generateFrameVBO(renderBufferProgram);
@@ -157,26 +163,20 @@ int main (int argv, char *argc[]) {
     ///////////////////////////////////////////////////////////////////////////////////////
     // Draw the 3d scene
     // Let's render to the framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    /*glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      scene->Render(time);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(renderBufferProgram);
+    glBindVertexArray(frameVAO);
 
       // Disable tests
       glDisable(GL_DEPTH_TEST);
 
       // Render the fbo quad
       glBindBuffer(GL_ARRAY_BUFFER, frameVBO);
-      glDrawArrays(GL_TRIANGLES, 0, frameVBOElements);*/
-
-    // Double check that our rendering worked
-    // GLfloat data[4];
-    // glReadPixels(0,0,1,1, GL_RGBA, GL_FLOAT, &data);
-    // printf("%f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
-
-    // glDrawElements(GL_TRIANGLES, numElements /*num*/, GL_UNSIGNED_INT, 0 /*offset*/);
-
-    scene->Render(time);
+      glDrawArrays(GL_TRIANGLES, 0, frameVBOElements);
 
     SDL_GL_SwapWindow(window);
     checkErrors();

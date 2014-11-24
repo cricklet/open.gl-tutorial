@@ -125,8 +125,8 @@ CubeScene::CubeScene () {
   checkErrors();
   
   // We can store 2d textures in a texture buffer
-  int texKittenIndex = 0;
-  int texPuppyIndex = 1;
+  int texKittenIndex = nextTextureIndex();
+  int texPuppyIndex = nextTextureIndex();
 
   this->texKitten = loadTexture("kitten.png", texKittenIndex);
   this->texPuppy = loadTexture("puppy.png", texPuppyIndex);
