@@ -20,6 +20,7 @@
 
 #include "helper.h"
 #include "scene.h"
+#include "fbo.h"
 
 int generateFrameVBO(GLuint shaderProgram) {
   GLfloat vertices[] = {

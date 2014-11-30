@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <cstdlib>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
